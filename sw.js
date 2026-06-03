@@ -1,7 +1,7 @@
 /* Service Worker — تقرير البرامج المنفّذة
    يخزّن ملفات التطبيق للعمل بدون إنترنت (offline).
    عند أي تحديث للملفات، غيّر رقم النسخة CACHE لتحديث الذاكرة. */
-const CACHE = 'taqrir-v8';
+const CACHE = 'taqrir-v9';
 const CORE = [
   './',
   './index.html',
