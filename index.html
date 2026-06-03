@@ -613,7 +613,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='10';
+const APP_VERSION='11';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1339,13 +1339,14 @@ function openArchive(){
   const ov=mkOverlay('arch');
   ov.bs.innerHTML=`
     <div class="bs-grip"></div>
-    <div class="bs-head"><span class="bs-title">📁 الأرشيف<small>${toAr(a.length)} تقرير محفوظ</small></span><button class="bs-x">✕</button></div>
+    <div class="bs-head"><span class="bs-title">📁 الأرشيف<small id="arch-sub">${toAr(a.length)} تقرير محفوظ</small></span><button class="bs-x">✕</button></div>
     <div class="bs-body" id="arch-body"></div>`;
   const body=$('#arch-body',ov.bs);
-  function selectedIds(){ return [...body.querySelectorAll('.arch-check:checked')].map(x=>+x.value); }
+  function selectedIds(){ return [...body.querySelectorAll('#arch-list .arch-check:checked')].map(x=>+x.value); }
   function selectedRecords(){ const ids=new Set(selectedIds()); return getArch().filter(r=>ids.has(r.id)); }
   function render(){
     a=getArch();
+    const sub=$('#arch-sub',ov.bs); if(sub) sub.textContent=`${toAr(a.length)} تقرير محفوظ`;
     body.innerHTML=`
       <div class="arch-toolbar">
         <div class="arch-tools-top">
