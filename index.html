@@ -187,6 +187,8 @@ button{cursor:pointer}
 .chip b{cursor:pointer;opacity:.85;font-size:13px}
 .chip b:hover{opacity:1}
 .chips-empty{color:var(--mut);font-size:13px}
+.m-tip{display:flex;gap:7px;align-items:flex-start;background:#eef7f5;color:#3f5a55;font-size:12.5px;line-height:1.7;padding:9px 12px;border-radius:14px;margin:0 0 12px;border:1px solid rgba(15,118,110,.12)}
+.m-tip b{color:#0f766e}
 .row{display:flex;gap:8px;align-items:center}
 
 /* عناصر إدارة الخيارات */
@@ -628,7 +630,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='16';
+const APP_VERSION='17';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1192,6 +1194,7 @@ function openMultiEditor(f){
     <div class="bs-grip"></div>
     <div class="bs-head"><span class="bs-title">${esc(f.ph)}<small>اختر واحداً أو أكثر</small></span><button class="bs-x">✕</button></div>
     <div class="bs-body">
+      <div class="m-tip"><span>💡</span><span>لإضافة أكثر من منفّذ: اكتب الاسم واضغط <b>＋</b> ثم أضِف التالي. واسم واحد يكفي؟ اكتبه واضغط <b>«تم»</b> مباشرة.</span></div>
       <div class="chips" id="m-chips"></div>
       <div class="row"><input class="ti" id="m-in" placeholder="أو اكتب اسماً وأضِفه…"><button class="btn ok sm" id="m-add">＋</button></div>
       <div class="opts" id="m-list"></div>
@@ -1219,7 +1222,7 @@ function openMultiEditor(f){
   $('#m-add',ov.bs).onclick=add;
   inp.addEventListener('input',build);
   inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();add();} });
-  $('#m-ok',ov.bs).onclick=()=>{ D[f.key]=sel.join('\n'); saveDraft(); renderFields(); ov.close(); };
+  $('#m-ok',ov.bs).onclick=()=>{ add(); D[f.key]=sel.join('\n'); saveDraft(); renderFields(); ov.close(); };
   $('#m-clr',ov.bs).onclick=()=>{ D[f.key]=''; saveDraft(); renderFields(); ov.close(); };
   ov.bs.querySelector('.bs-x').onclick=ov.close;
   rc(); build();
