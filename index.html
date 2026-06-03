@@ -630,7 +630,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='18';
+const APP_VERSION='19';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1522,7 +1522,12 @@ function openSettings(){
     body.innerHTML=`<div class="set-grid">${cards}</div>
       <button class="set-row" data-k="__link"><span class="ic">🔗</span><span class="rl"><b>ربط الأهداف بالبرامج</b><small>${toAr(Object.keys(SET.links).length)} روابط محفوظة</small></span><span class="ar">‹</span></button>
       <button class="set-row" data-k="__backup"><span class="ic">💾</span><span class="rl"><b>نسخ احتياطي</b><small>تصدير / استيراد نسخة شاملة</small></span><span class="ar">‹</span></button>
-      <div style="text-align:center;color:var(--mut);font-size:11px;margin-top:14px;font-weight:700">الإصدار ${APP_VERSION}</div>`;
+      <div style="margin:22px auto 2px;max-width:250px;text-align:center;line-height:1.75;border-top:1px solid rgba(15,118,110,.14);padding-top:16px">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:2px;color:var(--mut);opacity:.85;margin-bottom:6px">✦ إعداد وتنفيذ ✦</div>
+        <div style="font-size:14.5px;font-weight:800;color:var(--teal-d)">أ. أحمد العبدالكريم</div>
+        <div style="font-size:11.5px;font-weight:600;color:var(--mut);margin-top:2px">متوسطة الوليد بن عبادة</div>
+      </div>
+      <div style="text-align:center;color:var(--mut);font-size:11px;margin-top:10px;font-weight:700">الإصدار ${APP_VERSION}</div>`;
     body.querySelectorAll('[data-k]').forEach(b=>{ b.onclick=()=>openTab(b.dataset.k); });
     body.scrollTop=0;
   }
