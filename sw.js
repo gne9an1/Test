@@ -1,11 +1,13 @@
 /* Service Worker — تقرير البرامج المنفّذة
    يخزّن ملفات التطبيق للعمل بدون إنترنت (offline).
    عند أي تحديث للملفات، غيّر رقم النسخة CACHE لتحديث الذاكرة. */
-const CACHE = 'taqrir-v13';
+const CACHE = 'taqrir-v14';
 const CORE = [
   './',
   './index.html',
   './manifest.json',
+  './vendor/html2canvas.min.js',
+  './vendor/jspdf.umd.min.js',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-192.png',
