@@ -1651,50 +1651,103 @@ if ('serviceWorker' in navigator) {
 .install-bar .go{flex:none;border:none;border-radius:12px;padding:11px 15px;font-weight:900;font-size:13.5px;
   background:linear-gradient(160deg,#1ea088,#0f5d50);color:#fff;box-shadow:0 8px 18px -8px rgba(15,93,80,.9)}
 .install-bar .cl{flex:none;border:none;background:#eef1f0;color:#566;border-radius:11px;width:34px;height:34px;font-size:16px}
+.install-bar.tappable{cursor:pointer}
+.install-bar.tappable:active{transform:scale(.997)}
+/* دليل خطوات التثبيت */
+.ihg-ov{position:fixed;inset:0;z-index:200;background:rgba(18,28,25,.5);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
+.ihg-ov.show{display:flex}
+.ihg-sheet{width:100%;max-width:560px;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -10px 50px rgba(0,0,0,.3);
+  padding:0 18px calc(20px + var(--safe-b,0px));animation:ibrise .26s cubic-bezier(.22,1,.36,1)}
+.ihg-grip{width:42px;height:5px;border-radius:5px;background:#d3dad7;margin:10px auto 4px}
+.ihg-head{display:flex;align-items:center;gap:10px;padding:6px 0 11px;border-bottom:1px solid var(--line,#dde3e1)}
+.ihg-title{flex:1;font-weight:900;font-size:16.5px;color:var(--teal-d,#0f5d50)}
+.ihg-x{border:none;background:#eef1f0;color:#566;border-radius:11px;width:36px;height:36px;font-size:16px;flex:none}
+.ihg-steps{list-style:none;margin:15px 0;padding:0;display:flex;flex-direction:column;gap:13px}
+.ihg-steps li{display:flex;gap:11px;align-items:flex-start;font-size:14px;font-weight:600;color:var(--ink,#26302d);line-height:1.6}
+.ihg-steps b{color:var(--teal-d,#0f5d50);font-weight:900}
+.ihg-n{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:14px;color:#fff;
+  background:linear-gradient(150deg,#1ea088,#0f5d50);box-shadow:0 6px 14px -6px rgba(15,93,80,.9)}
+.ihg-tip{font-size:12.5px;color:var(--ink-2,#5d6864);background:rgba(21,128,111,.08);border-radius:12px;padding:10px 12px;line-height:1.7;margin-bottom:14px}
+.ihg-ok{width:100%;height:50px;border:none;border-radius:14px;font-weight:900;font-size:15px;background:linear-gradient(160deg,#1ea088,#0f5d50);color:#fff}
 </style>
 <script>
-/* مساعد التثبيت: زر تلقائي لأندرويد + إرشاد لآبل */
+/* مساعد التثبيت: زر مباشر لأندرويد + دليل خطوات مصوّر (يذكر «المزيد») لآبل */
 (function(){
-  var KEY='rep2_install_dismiss';
   function standalone(){
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   }
   if (standalone()) return;                         // مثبّت مسبقاً — لا نعرض شيء
-  try{ if(localStorage.getItem(KEY)==='1') return; }catch(e){}  // أغلقه المستخدم سابقاً
-  var bar=null, deferred=null;
-  function build(html){
-    bar=document.createElement('div'); bar.className='install-bar'; bar.innerHTML=html;
-    document.body.appendChild(bar);
-    var cl=bar.querySelector('.cl');
-    if(cl) cl.onclick=function(){ bar.classList.remove('show'); try{localStorage.setItem(KEY,'1');}catch(e){} };
-    return bar;
-  }
   function isIOS(){
     return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
            (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
   }
-  /* أندرويد / كروم: نلتقط حدث التثبيت ونعرض زراً */
-  window.addEventListener('beforeinstallprompt', function(e){
-    e.preventDefault(); deferred=e;
-    var b=build('<span class="ic">📲</span><span class="tx">ثبّت التطبيق على جهازك<small>وصول أسرع · يعمل بدون إنترنت</small></span><button class="go">تثبيت</button><button class="cl">✕</button>');
-    b.classList.add('show');
-    b.querySelector('.go').onclick=function(){
-      if(!deferred) return;
-      deferred.prompt();
-      deferred.userChoice.finally(function(){ deferred=null; b.classList.remove('show'); });
-    };
-  });
-  window.addEventListener('appinstalled', function(){ if(bar) bar.classList.remove('show'); });
-  /* آبل (آيفون/آيباد): لا يوجد تثبيت تلقائي — نعرض إرشاداً */
-  if(isIOS()){
-    window.addEventListener('load', function(){
-      setTimeout(function(){
-        if(standalone()) return;
-        var b=build('<span class="ic">⬆️</span><span class="tx">أضِف التطبيق إلى الشاشة الرئيسية<small>اضغط زر المشاركة ⬆️ بالأسفل ثم «إضافة إلى الشاشة الرئيسية»</small></span><button class="cl">✕</button>');
-        b.classList.add('show');
-      }, 1600);
-    });
+  var bar=null, deferred=null;
+  function ensureBar(){
+    if(!bar){ bar=document.createElement('div'); bar.className='install-bar'; document.body.appendChild(bar); }
+    return bar;
   }
+  function bindClose(){
+    var cl=bar.querySelector('.cl');
+    if(cl) cl.onclick=function(ev){ ev.stopPropagation(); bar.classList.remove('show'); };
+  }
+  /* وضع أندرويد: زر تثبيت بضغطة واحدة */
+  function modeInstall(){
+    ensureBar(); bar.classList.remove('tappable'); bar.onclick=null;
+    bar.innerHTML='<span class="ic">📲</span><span class="tx">ثبّت التطبيق على جهازك<small>وصول أسرع · يعمل بدون إنترنت</small></span><button class="go">تثبيت</button><button class="cl">✕</button>';
+    bindClose();
+    bar.querySelector('.go').onclick=function(ev){
+      ev.stopPropagation(); if(!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.finally(function(){ deferred=null; bar.classList.remove('show'); });
+    };
+    bar.classList.add('show');
+  }
+  /* وضع الدليل: الضغط على الشريط يفتح خطوات مرقّمة */
+  function modeGuide(platform){
+    ensureBar(); bar.classList.add('tappable');
+    bar.innerHTML='<span class="ic">⬆️</span><span class="tx">ثبّت التطبيق على جهازك<small>اضغط هنا لعرض الطريقة خطوة بخطوة</small></span><button class="go">الطريقة</button><button class="cl">✕</button>';
+    bindClose();
+    var open=function(ev){ if(ev) ev.stopPropagation(); openGuide(platform); };
+    bar.onclick=open;
+    bar.querySelector('.go').onclick=open;
+    bar.classList.add('show');
+  }
+  /* نافذة الخطوات */
+  function openGuide(platform){
+    var ios = platform==='ios';
+    var title = ios ? 'طريقة تثبيت التطبيق على آيفون / آيباد' : 'طريقة تثبيت التطبيق';
+    var st = ios ? [
+      'اضغط زر <b>المشاركة</b> ⬆️ (المربّع وفيه سهم لأعلى — أسفل الشاشة في Safari).',
+      'انزل في القائمة للأسفل، <b>وإن لم يظهر الخيار اضغط «المزيد» أو «عرض المزيد»</b>.',
+      'اختر <b>«إضافة إلى الشاشة الرئيسية»</b>.',
+      'اضغط <b>«إضافة»</b> في الأعلى — وستجد أيقونة التطبيق على شاشتك ✅.'
+    ] : [
+      'افتح قائمة المتصفح <b>⋮</b> (ثلاث نقاط في الأعلى).',
+      'اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.',
+      'اضغط <b>«تثبيت»</b> — وستجد الأيقونة على شاشتك ✅.'
+    ];
+    var nums='١٢٣٤';
+    var lis = st.map(function(s,i){ return '<li><span class="ihg-n">'+nums[i]+'</span><span>'+s+'</span></li>'; }).join('');
+    var tip = ios ? '<div class="ihg-tip">💡 لازم تفتح الرابط داخل <b>Safari</b> (مو داخل واتساب). وبعد الإضافة، افتح التطبيق من الأيقونة ليظهر بملء الشاشة.</div>' : '';
+    var ov=document.createElement('div'); ov.className='ihg-ov';
+    ov.innerHTML='<div class="ihg-sheet"><div class="ihg-grip"></div><div class="ihg-head"><span class="ihg-title">'+title+'</span><button class="ihg-x">✕</button></div><ol class="ihg-steps">'+lis+'</ol>'+tip+'<button class="ihg-ok">تمام، فهمت</button></div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add('show'); });
+    function close(){ ov.classList.remove('show'); setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },200); }
+    ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+    ov.querySelector('.ihg-x').onclick=close;
+    ov.querySelector('.ihg-ok').onclick=close;
+  }
+  /* أندرويد/كروم: عند توفّر التثبيت المباشر نعرض زر التثبيت (يُحدّث الشريط إن وُجد) */
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; modeInstall(); });
+  window.addEventListener('appinstalled', function(){ if(bar) bar.classList.remove('show'); });
+  /* بعد التحميل: إن لم يتوفّر تثبيت مباشر، اعرض شريط الدليل */
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      if(standalone() || deferred) return;          // مثبّت أو ظهر زر التثبيت المباشر
+      modeGuide(isIOS() ? 'ios' : 'and');
+    }, 1600);
+  });
 })();
 </script>
 
