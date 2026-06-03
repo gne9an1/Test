@@ -284,7 +284,7 @@ button{cursor:pointer}
 .print-pack{display:none}
 .print-sheet-wrap{break-after:page;page-break-after:always}
 .print-sheet-wrap:last-child{break-after:auto;page-break-after:auto}
-@media(max-width:560px){.arch-bulk{grid-template-columns:1fr}.arch-card{align-items:flex-start}.arch-a{flex-wrap:wrap;justify-content:flex-end}.bottombar .inner{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:560px){.arch-bulk{grid-template-columns:1fr}.arch-card{align-items:flex-start}.arch-a{flex-wrap:wrap;justify-content:flex-end}.bottombar .inner{grid-template-columns:repeat(3,1fr)}}
 
 /* ===== الطباعة ===== */
 @media print{
@@ -601,7 +601,6 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
   <div class="inner">
     <button class="act" id="btn-new" aria-label="بدء تقرير جديد">＋ جديد</button>
     <button class="act" id="btn-save" aria-label="حفظ التقرير في الأرشيف">💾 حفظ</button>
-    <button class="act" id="btn-export" aria-label="تصدير التقرير كملف HTML قابل للتعديل">⬇️ ملف</button>
     <button class="act primary" id="btn-print" aria-label="طباعة التقرير أو حفظه PDF">🖨 طباعة / PDF</button>
   </div>
 </nav>
@@ -1572,7 +1571,6 @@ function init(){
   $('#btn-print').onclick=printCurrentReport;
   $('#btn-new').onclick=newReport;
   $('#btn-save').onclick=saveToArchive;
-  $('#btn-export').onclick=()=>exportReportFile(D);
   $('#btn-arch').onclick=openArchive;
   $('#btn-set').onclick=openSettings;
   updateArchBadge();
@@ -1590,7 +1588,6 @@ window.addEventListener('DOMContentLoaded',init);
       'btn-set':'فتح الإعدادات',
       'btn-new':'بدء تقرير جديد',
       'btn-save':'حفظ التقرير في الأرشيف',
-      'btn-export':'تصدير التقرير كملف HTML قابل للتعديل',
       'btn-print':'طباعة التقرير أو حفظه PDF'
     };
     Object.keys(labels).forEach(id=>{
