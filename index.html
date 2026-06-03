@@ -294,7 +294,8 @@ button{cursor:pointer}
   .stage{padding:0;margin:0;display:block}
   body.print-pack-mode .stage{display:none !important}
   body.print-pack-mode .print-pack{display:block !important}
-  body.print-pack-mode .print-sheet-wrap{width:100%;height:100vh;overflow:hidden}
+  body.print-pack-mode .print-sheet-wrap{width:210mm;height:297mm;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+  body.print-pack-mode .print-pack .sheet{width:210mm!important;height:297mm!important;aspect-ratio:auto!important;max-width:none!important}
   .sheet{width:100%;max-width:none;box-shadow:none;border-radius:0}
   .fld{background:transparent !important;box-shadow:none !important;overflow:visible !important}
   .fld.empty:before{content:'' !important}
