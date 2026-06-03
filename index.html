@@ -630,7 +630,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='19';
+const APP_VERSION='20';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1658,13 +1658,16 @@ function importFullBackup(file,done){
       if(!hasLists&&!hasReports) throw 0;
       if(!confirm('استيراد النسخة الاحتياطية؟ سيتم استبدال إعداداتك وتقاريرك الحالية بما في الملف.')) return;
       if(hasLists){ SET.lists=obj.lists||{}; SET.links=obj.links||{}; ensureLists(); saveSettings(); }
+      let repOk=true;
       if(hasReports){
         const now=Date.now();
         const recs=obj.reports.map((r,i)=>{ const data=Object.assign(blankReport(),cloneData(r.data||{}));
-          return {id:r.id||now+i, name:safePlain(r.name||data.name)||'تقرير بدون اسم', date:datePlainOf(data)||safePlain(r.date)||'', ts:r.ts||now, data}; });
-        setArch(recs.slice(0,80));
+          const rec={id:r.id||now+i, name:safePlain(r.name||data.name)||'تقرير بدون اسم', date:datePlainOf(data)||safePlain(r.date)||'', ts:r.ts||now, data};
+          if(r.pdfSize) rec.pdfSize=r.pdfSize;
+          return rec; });
+        repOk=setArch(recs.slice(0,80));
       }
-      toast('استُعيدت النسخة الاحتياطية ✓'); if(done) done();
+      if(repOk) toast('استُعيدت النسخة الاحتياطية ✓'); if(done) done();
     }catch(e){ toast('ملف النسخة الاحتياطية غير صالح'); }
   };
   fr.readAsText(file);
