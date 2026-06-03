@@ -613,7 +613,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='11';
+const APP_VERSION='12';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -959,7 +959,7 @@ async function onPick(e){
     saveDraft(); renderPhotos(); openPhotoEditor(curSlot);
   }catch(err){ toast('تعذّر تحميل الصورة'); }
 }
-async function resizeImage(file,maxDim=1280,quality=0.85){
+async function resizeImage(file,maxDim=800,quality=0.8){
   let bmp;
   try{ bmp=await createImageBitmap(file,{imageOrientation:'from-image'}); }
   catch(e){ bmp=await new Promise((res,rej)=>{const im=new Image();const u=URL.createObjectURL(file);im.onload=()=>{URL.revokeObjectURL(u);res(im);};im.onerror=()=>{URL.revokeObjectURL(u);rej(0);};im.src=u;}); }
