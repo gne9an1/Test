@@ -254,6 +254,7 @@ button{cursor:pointer}
 .arch-t{font-weight:900;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .arch-m{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:11.5px;color:var(--ink-2)}
 .arch-m span{background:#eef2f1;padding:2px 9px;border-radius:20px}
+.arch-m span.sz{background:#d7f0ea;color:#0f766e;font-weight:800}
 .arch-a{display:flex;gap:6px;flex:none}
 
 /* تنبيه */
@@ -627,7 +628,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
-const APP_VERSION='14';
+const APP_VERSION='15';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1318,6 +1319,21 @@ const PDF_JPEG_Q=0.85;            // جودة JPEG (توازن بين الوضو
 const SHEET_RATIO=2572/1819;      // ارتفاع/عرض النموذج (نفس aspect-ratio:1819/2572)
 let _formBgJpeg=null;             // نسخة JPEG من خلفية النموذج (تُولَّد مرة واحدة)
 
+/* تنسيق حجم الملف بالأرقام العربية (ك.ب / م.ب) */
+function fmtSize(bytes){
+  if(!bytes||bytes<0) return '';
+  const kb=bytes/1024;
+  if(kb<1000) return toAr(Math.round(kb))+' ك.ب';
+  return toAr((kb/1024).toFixed(1))+' م.ب';
+}
+/* يحفظ حجم الـ PDF الفعلي على سجل الأرشيف (يُحسب لحظة التصدير فقط — بلا أي ثقل) */
+function setArchPdfSize(id,bytes){
+  if(id==null||!bytes) return;
+  const a=getArch(); let changed=false;
+  const n=a.map(r=>{ if(r.id===id){ if(r.pdfSize!==bytes) changed=true; return Object.assign({},r,{pdfSize:bytes}); } return r; });
+  if(changed) setArch(n);
+}
+
 function pdfLibsReady(){ return !!(window.jspdf && window.jspdf.jsPDF && window.html2canvas); }
 
 /* يقرأ خلفية النموذج (WEBP) من CSS مرة واحدة ويحوّلها JPEG لتقليل حجم الـ PDF */
@@ -1365,7 +1381,10 @@ async function printReportsPDF(records,title){
     if(i>0) doc.addPage();
     doc.addImage(jpeg,'JPEG',0,0,210,297,undefined,'FAST');
   }
-  downloadBlob(doc.output('blob'), safeFileName(title||(records[0]&&records[0].name)||'تقارير-البرامج')+'.pdf');
+  const blob=doc.output('blob');
+  if(records.length===1 && records[0] && records[0].id!=null) setArchPdfSize(records[0].id, blob.size);
+  downloadBlob(blob, safeFileName(title||(records[0]&&records[0].name)||'تقارير-البرامج')+'.pdf');
+  return blob.size;
 }
 
 /* المسار الاحتياطي: طباعة المتصفح (مُحسّنة الحجم عبر خلفية JPEG وحواف مربّعة) */
@@ -1402,7 +1421,7 @@ async function printReports(records,title){
   return printReportsNative(records,title);
 }
 function printCurrentReport(){
-  const rec={name:clean(D.name)||'تقرير بدون اسم',data:cloneData(D)};
+  const rec={name:clean(D.name)||'تقرير بدون اسم',data:cloneData(D),id:D.__archiveId};
   printReports([rec],reportFileBase(D));
 }
 
@@ -1452,10 +1471,10 @@ function openArchive(){
       const c=el('div','arch-card'+(hasPhoto?' has-photo':''));
       c.innerHTML=`<input class="arch-check" type="checkbox" value="${rec.id}" aria-label="تحديد ${esc(archiveTitle(rec))}">
         <div class="arch-info"><div class="arch-t">${esc(archiveTitle(rec))}</div>
-        <div class="arch-m"><span>${esc(archiveDateLabel(rec))}</span><span>${new Date(rec.ts).toLocaleDateString('ar')}</span><span>${hasPhoto?'بالصور':'بدون صور'}</span></div></div>
+        <div class="arch-m"><span>${esc(archiveDateLabel(rec))}</span><span>${new Date(rec.ts).toLocaleDateString('ar')}</span><span>${hasPhoto?'بالصور':'بدون صور'}</span>${rec.pdfSize?`<span class="sz">📄 ${fmtSize(rec.pdfSize)}</span>`:''}</div></div>
         <div class="arch-a"><button class="btn sm" data-a="open">فتح/تعديل</button><button class="btn sm" data-a="pdf">PDF</button><button class="btn sm dng" data-a="del">حذف</button></div>`;
       c.querySelector('[data-a="open"]').onclick=()=>{ D=Object.assign(blankReport(),cloneData(rec.data)); D.__archiveId=rec.id; saveDraft(); renderFields(); renderPhotos(); ov.close(); toast('فُتح التقرير للتعديل — بعد التعديل اضغط حفظ لتحديثه'); };
-      c.querySelector('[data-a="pdf"]').onclick=()=>printReports([rec],reportFileBase(rec.data));
+      c.querySelector('[data-a="pdf"]').onclick=async()=>{ await printReports([rec],reportFileBase(rec.data)); render(); };
       c.querySelector('[data-a="del"]').onclick=()=>{ if(confirm('حذف هذا التقرير من الأرشيف؟')){ setArch(getArch().filter(x=>x.id!==rec.id)); render(); } };
       c.querySelector('.arch-check').onchange=updateSel;
       list.appendChild(c);
