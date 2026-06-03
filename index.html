@@ -277,7 +277,7 @@ button{cursor:pointer}
 .arch-tools-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .arch-select-all{display:flex;align-items:center;gap:8px;font-weight:900;color:var(--teal-d);font-size:13px}
 .arch-selected{font-size:12px;color:var(--ink-2);font-weight:800;background:#eef7f5;padding:5px 10px;border-radius:999px}
-.arch-bulk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.arch-bulk{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .arch-check{width:22px;height:22px;accent-color:var(--teal);flex:none}
 .arch-info{min-width:0;flex:1}
 .arch-card.has-photo .arch-t::after{content:'  🖼';font-size:12px;opacity:.8}
@@ -613,6 +613,7 @@ button:focus-visible,.btn:focus-visible,.act:focus-visible,.icon-btn:focus-visib
 
 /* ═════════ مفاتيح التخزين ═════════ */
 const K_SET='rep2_settings', K_DRAFT='rep2_draft', K_ARCH='rep2_archive';
+const APP_VERSION='10';
 
 /* ═════════ القوائم القابلة للإدارة ═════════ */
 const CATS=[
@@ -1339,11 +1340,8 @@ function openArchive(){
   ov.bs.innerHTML=`
     <div class="bs-grip"></div>
     <div class="bs-head"><span class="bs-title">📁 الأرشيف<small>${toAr(a.length)} تقرير محفوظ</small></span><button class="bs-x">✕</button></div>
-    <div class="bs-body" id="arch-body"></div>
-    <input type="file" id="arch-import-file" accept="application/json,text/html,.json,.html" style="display:none">`;
+    <div class="bs-body" id="arch-body"></div>`;
   const body=$('#arch-body',ov.bs);
-  const fileIn=$('#arch-import-file',ov.bs);
-  fileIn.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) importArchiveFile(f,()=>{ ov.close(); openArchive(); }); });
   function selectedIds(){ return [...body.querySelectorAll('.arch-check:checked')].map(x=>+x.value); }
   function selectedRecords(){ const ids=new Set(selectedIds()); return getArch().filter(r=>ids.has(r.id)); }
   function render(){
@@ -1356,33 +1354,28 @@ function openArchive(){
         </div>
         <div class="arch-bulk">
           <button class="btn sm ok" id="arch-pdf">🖨 PDF للمحدد</button>
-          <button class="btn sm" id="arch-export">⬇️ ملف قابل للتعديل</button>
           <button class="btn sm dng" id="arch-delete">🗑 حذف المحدد</button>
         </div>
-        <button class="btn sm full" id="arch-import" style="margin-top:8px">⬆️ استيراد ملف تقارير</button>
       </div>
       <div id="arch-list"></div>`;
     const list=$('#arch-list',body);
-    if(!a.length){ list.innerHTML='<div class="empty-note">لا توجد تقارير محفوظة بعد.<br>عبّئ تقريراً ثم اضغط «حفظ». ويمكنك استيراد ملف تقارير من الأعلى.</div>'; }
+    if(!a.length){ list.innerHTML='<div class="empty-note">لا توجد تقارير محفوظة بعد.<br>عبّئ تقريراً ثم اضغط «حفظ».</div>'; }
     a.forEach(rec=>{
       const hasPhoto=!!(rec.data&&rec.data.photos&&rec.data.photos.some(p=>p&&p.src));
       const c=el('div','arch-card'+(hasPhoto?' has-photo':''));
       c.innerHTML=`<input class="arch-check" type="checkbox" value="${rec.id}" aria-label="تحديد ${esc(archiveTitle(rec))}">
         <div class="arch-info"><div class="arch-t">${esc(archiveTitle(rec))}</div>
         <div class="arch-m"><span>${esc(archiveDateLabel(rec))}</span><span>${new Date(rec.ts).toLocaleDateString('ar')}</span><span>${hasPhoto?'بالصور':'بدون صور'}</span></div></div>
-        <div class="arch-a"><button class="btn sm" data-a="open">فتح/تعديل</button><button class="btn sm" data-a="pdf">PDF</button><button class="btn sm" data-a="file">ملف</button><button class="btn sm dng" data-a="del">حذف</button></div>`;
+        <div class="arch-a"><button class="btn sm" data-a="open">فتح/تعديل</button><button class="btn sm" data-a="pdf">PDF</button><button class="btn sm dng" data-a="del">حذف</button></div>`;
       c.querySelector('[data-a="open"]').onclick=()=>{ D=Object.assign(blankReport(),cloneData(rec.data)); D.__archiveId=rec.id; saveDraft(); renderFields(); renderPhotos(); ov.close(); toast('فُتح التقرير للتعديل — بعد التعديل اضغط حفظ لتحديثه'); };
       c.querySelector('[data-a="pdf"]').onclick=()=>printReports([rec],reportFileBase(rec.data));
-      c.querySelector('[data-a="file"]').onclick=()=>exportArchiveRecords([rec]);
       c.querySelector('[data-a="del"]').onclick=()=>{ if(confirm('حذف هذا التقرير من الأرشيف؟')){ setArch(getArch().filter(x=>x.id!==rec.id)); render(); } };
       c.querySelector('.arch-check').onchange=updateSel;
       list.appendChild(c);
     });
     const all=$('#arch-all',body);
     all.onchange=()=>{ body.querySelectorAll('#arch-list .arch-check').forEach(ch=>ch.checked=all.checked); updateSel(); };
-    $('#arch-import',body).onclick=()=>{ fileIn.value=''; fileIn.click(); };
     $('#arch-pdf',body).onclick=()=>printReports(selectedRecords(),'تقارير-البرامج-المحددة');
-    $('#arch-export',body).onclick=()=>exportArchiveRecords(selectedRecords());
     $('#arch-delete',body).onclick=()=>{
       const ids=selectedIds();
       if(!ids.length) return toast('حدد تقريرًا واحدًا على الأقل');
@@ -1419,7 +1412,8 @@ function openSettings(){
     const cards=CATS.map(c=>`<button class="set-card" data-k="${c.key}"><span class="ic">${ICONS[c.key]||'📋'}</span><span class="nm">${esc(c.label)}</span><span class="ct">${toAr((SET.lists[c.key]||[]).length)} عبارة</span></button>`).join('');
     body.innerHTML=`<div class="set-grid">${cards}</div>
       <button class="set-row" data-k="__link"><span class="ic">🔗</span><span class="rl"><b>ربط الأهداف بالبرامج</b><small>${toAr(Object.keys(SET.links).length)} روابط محفوظة</small></span><span class="ar">‹</span></button>
-      <button class="set-row" data-k="__backup"><span class="ic">💾</span><span class="rl"><b>نسخ احتياطي</b><small>تصدير / استيراد الإعدادات</small></span><span class="ar">‹</span></button>`;
+      <button class="set-row" data-k="__backup"><span class="ic">💾</span><span class="rl"><b>نسخ احتياطي</b><small>تصدير / استيراد نسخة شاملة</small></span><span class="ar">‹</span></button>
+      <div style="text-align:center;color:var(--mut);font-size:11px;margin-top:14px;font-weight:700">الإصدار ${APP_VERSION}</div>`;
     body.querySelectorAll('[data-k]').forEach(b=>{ b.onclick=()=>openTab(b.dataset.k); });
     body.scrollTop=0;
   }
@@ -1514,45 +1508,50 @@ function openSettings(){
   }
   function renderBackup(){
     const counts=CATS.map(c=>`${c.label}: ${toAr((SET.lists[c.key]||[]).length)}`).join(' · ');
+    const repN=getArch().length;
     body.innerHTML=`
-      <div class="hint">احفظ إعداداتك (القوائم + الروابط) في ملف. أما التقارير نفسها فيمكن تصديرها من الأرشيف كملف قابل للتعديل يحتوي الصور.</div>
-      <div class="item" style="margin-bottom:12px"><span>${counts}<br>الروابط: ${toAr(Object.keys(SET.links).length)}</span></div>
-      <button class="btn ok full" id="bk-exp" style="height:52px;margin-bottom:10px">⬇️ تصدير الإعدادات (ملف)</button>
-      <button class="btn full" id="bk-imp" style="height:52px;margin-bottom:10px">⬆️ استيراد الإعدادات (من ملف)</button>
-      <button class="btn full" id="bk-report" style="height:52px">📄 استيراد تقرير قابل للتعديل</button>
-      <input type="file" id="bk-file" accept="application/json,text/html,.json,.html" style="display:none">
-      <input type="file" id="bk-report-file" accept="application/json,text/html,.json,.html" style="display:none">
-      <div class="pe-note">الاستيراد يستبدل إعداداتك الحالية بما في الملف.</div>`;
-    $('#bk-exp',body).onclick=exportSettings;
+      <div class="hint">نسخة احتياطية <b>واحدة</b> تحفظ كل شيء: قوائمك وروابطك و<b>كل تقاريرك</b> في ملف واحد — للنقل بين أجهزتك أو للأمان.</div>
+      <div class="item" style="margin-bottom:12px"><span>${counts}<br>الروابط: ${toAr(Object.keys(SET.links).length)} · التقارير: ${toAr(repN)}</span></div>
+      <button class="btn ok full" id="bk-exp" style="height:52px;margin-bottom:10px">⬇️ تصدير نسخة احتياطية</button>
+      <button class="btn full" id="bk-imp" style="height:52px">⬆️ استيراد نسخة احتياطية</button>
+      <input type="file" id="bk-file" accept="application/json,.json" style="display:none">
+      <div class="pe-note">الاستيراد يستبدل إعداداتك وتقاريرك الحالية بما في الملف.</div>`;
+    $('#bk-exp',body).onclick=exportFullBackup;
     const fi=$('#bk-file',body);
     $('#bk-imp',body).onclick=()=>{ fi.value=''; fi.click(); };
-    fi.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) importSettings(f,ov); });
-    const rf=$('#bk-report-file',body);
-    $('#bk-report',body).onclick=()=>{ rf.value=''; rf.click(); };
-    rf.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) importReportFile(f,()=>ov.close()); });
+    fi.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) importFullBackup(f,()=>renderBackup()); });
   }
   backBtn.onclick=showMenu;
   ov.bs.querySelector('.bs-x').onclick=ov.close;
   showMenu();
 }
 
-function exportSettings(){
-  const payload={app:'report-overlay',v:2,exportedAt:new Date().toISOString(),lists:SET.lists,links:SET.links};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const a=el('a'); a.href=URL.createObjectURL(blob); a.download='اعدادات-تقرير-البرامج.json';
-  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1200);
-  toast('صُدّرت الإعدادات ✓');
+function exportFullBackup(){
+  const payload={app:'report-programs-backup',v:5,kind:'full',exportedAt:new Date().toISOString(),
+    lists:SET.lists, links:SET.links, reports:getArch()};
+  const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+  downloadBlob(blob,'نسخة-احتياطية-تقارير-البرامج.json');
+  toast('صُدّرت النسخة الاحتياطية (الإعدادات + التقارير) ✓');
 }
-function importSettings(file,ov){
+function importFullBackup(file,done){
   const fr=new FileReader();
   fr.onload=()=>{
     try{
       const obj=JSON.parse(fr.result);
-      if(!obj||!obj.lists) throw 0;
-      if(!confirm('استبدال إعداداتك الحالية بالإعدادات المستوردة؟')) return;
-      SET.lists=obj.lists||{}; SET.links=obj.links||{}; ensureLists(); saveSettings();
-      toast('استُوردت الإعدادات ✓'); if(ov) ov.close();
-    }catch(e){ toast('الملف غير صالح'); }
+      if(!obj||typeof obj!=='object') throw 0;
+      const hasLists=obj.lists&&typeof obj.lists==='object';
+      const hasReports=Array.isArray(obj.reports);
+      if(!hasLists&&!hasReports) throw 0;
+      if(!confirm('استيراد النسخة الاحتياطية؟ سيتم استبدال إعداداتك وتقاريرك الحالية بما في الملف.')) return;
+      if(hasLists){ SET.lists=obj.lists||{}; SET.links=obj.links||{}; ensureLists(); saveSettings(); }
+      if(hasReports){
+        const now=Date.now();
+        const recs=obj.reports.map((r,i)=>{ const data=Object.assign(blankReport(),cloneData(r.data||{}));
+          return {id:r.id||now+i, name:safePlain(r.name||data.name)||'تقرير بدون اسم', date:datePlainOf(data)||safePlain(r.date)||'', ts:r.ts||now, data}; });
+        setArch(recs.slice(0,80));
+      }
+      toast('استُعيدت النسخة الاحتياطية ✓'); if(done) done();
+    }catch(e){ toast('ملف النسخة الاحتياطية غير صالح'); }
   };
   fr.readAsText(file);
 }
@@ -1633,10 +1632,14 @@ window.addEventListener('DOMContentLoaded',init);
 </script>
 
 <script>
-/* تسجيل الـ service worker لتفعيل العمل بدون إنترنت (PWA) */
+/* تسجيل الـ service worker (PWA) + تحديث تلقائي لتفادي بقاء نسخة قديمة مخزّنة */
 if ('serviceWorker' in navigator) {
+  let _refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_refreshing) return; _refreshing = true; window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then(reg => { if (reg && reg.update) reg.update(); }).catch(() => {});
   });
 }
 </script>
