@@ -1741,11 +1741,13 @@ if ('serviceWorker' in navigator) {
   /* أندرويد/كروم: عند توفّر التثبيت المباشر نعرض زر التثبيت (يُحدّث الشريط إن وُجد) */
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; modeInstall(); });
   window.addEventListener('appinstalled', function(){ if(bar) bar.classList.remove('show'); });
-  /* بعد التحميل: إن لم يتوفّر تثبيت مباشر، اعرض شريط الدليل */
+  /* الآيفون/الآيباد فقط: نعرض دليل الخطوات (آبل لا توفّر زر تثبيت تلقائي).
+     أما أندرويد فيعتمد فقط على زر التثبيت المباشر عبر beforeinstallprompt — بلا وصف. */
   window.addEventListener('load', function(){
+    if(!isIOS()) return;
     setTimeout(function(){
-      if(standalone() || deferred) return;          // مثبّت أو ظهر زر التثبيت المباشر
-      modeGuide(isIOS() ? 'ios' : 'and');
+      if(standalone() || deferred) return;
+      modeGuide('ios');
     }, 1600);
   });
 })();
