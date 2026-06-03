@@ -1402,28 +1402,33 @@ function openArchive(){
 
 /* ═════════ الإعدادات (إدارة القوائم + الربط + النسخ الاحتياطي) ═════════ */
 function openSettings(){
-  let tab='names';
+  let tab=null;
   const ov=mkOverlay('set');
   ov.bs.style.maxHeight='92vh';
   ov.bs.innerHTML=`
     <div class="bs-grip"></div>
-    <div class="bs-head"><span class="bs-title">⚙️ الإعدادات<small>القوائم تُملأ مرة وتبقى محفوظة</small></span><button class="bs-x">✕</button></div>
-    <div class="tabs" id="s-tabs"></div>
+    <div class="bs-head"><button class="set-back" id="set-back" aria-label="رجوع للقائمة" style="display:none">→</button><span class="bs-title" id="set-title">⚙️ الإعدادات<small>القوائم تُملأ مرة وتبقى محفوظة</small></span><button class="bs-x">✕</button></div>
     <div class="bs-body" id="s-body"></div>`;
-  const tabsEl=$('#s-tabs',ov.bs), body=$('#s-body',ov.bs);
-  function tabs(){
-    tabsEl.innerHTML='';
-    CATS.forEach(c=>{ const b=el('button','tab'+(tab===c.key?' on':'')); b.textContent=`${c.label} (${toAr((SET.lists[c.key]||[]).length)})`;
-      b.onclick=()=>{tab=c.key;tabs();render();}; tabsEl.appendChild(b); });
-    const lk=el('button','tab'+(tab==='__link'?' on':'')); lk.textContent=`🔗 ربط الأهداف بالبرامج (${toAr(Object.keys(SET.links).length)})`;
-    lk.onclick=()=>{tab='__link';tabs();render();}; tabsEl.appendChild(lk);
-    const bk=el('button','tab'+(tab==='__backup'?' on':'')); bk.textContent='💾 نسخ احتياطي';
-    bk.onclick=()=>{tab='__backup';tabs();render();}; tabsEl.appendChild(bk);
+  const body=$('#s-body',ov.bs), backBtn=$('#set-back',ov.bs), titleEl=$('#set-title',ov.bs);
+  const ICONS={names:'🏷️',types:'🗂️',entities:'🏢',targets:'🎯',implementers:'🧑‍🏫',goals:'🚩',impacts:'📈'};
+  /* تحديث عدّاد القائمة المفتوحة (محتفظون بالاسم tabs لتوافق بقية الكود) */
+  function tabs(){ const cnt=$('#s-count',body); const c=CATS.find(x=>x.key===tab); if(cnt&&c&&SET.lists[tab]) cnt.textContent=`${toAr(SET.lists[tab].length)} عبارة في «${c.label}»`; }
+  function showMenu(){
+    tab=null; backBtn.style.display='none';
+    titleEl.innerHTML='⚙️ الإعدادات<small>القوائم تُملأ مرة وتبقى محفوظة</small>';
+    const cards=CATS.map(c=>`<button class="set-card" data-k="${c.key}"><span class="ic">${ICONS[c.key]||'📋'}</span><span class="nm">${esc(c.label)}</span><span class="ct">${toAr((SET.lists[c.key]||[]).length)} عبارة</span></button>`).join('');
+    body.innerHTML=`<div class="set-grid">${cards}</div>
+      <button class="set-row" data-k="__link"><span class="ic">🔗</span><span class="rl"><b>ربط الأهداف بالبرامج</b><small>${toAr(Object.keys(SET.links).length)} روابط محفوظة</small></span><span class="ar">‹</span></button>
+      <button class="set-row" data-k="__backup"><span class="ic">💾</span><span class="rl"><b>نسخ احتياطي</b><small>تصدير / استيراد الإعدادات</small></span><span class="ar">‹</span></button>`;
+    body.querySelectorAll('[data-k]').forEach(b=>{ b.onclick=()=>openTab(b.dataset.k); });
+    body.scrollTop=0;
   }
-  function render(){
-    if(tab==='__link') return renderLinks();
-    if(tab==='__backup') return renderBackup();
-    renderList();
+  function openTab(key){
+    tab=key; backBtn.style.display='grid';
+    if(key==='__link'){ titleEl.innerHTML='🔗 ربط الأهداف بالبرامج'; renderLinks(); }
+    else if(key==='__backup'){ titleEl.innerHTML='💾 نسخ احتياطي'; renderBackup(); }
+    else { const c=CATS.find(x=>x.key===key); titleEl.innerHTML=`${ICONS[key]||'📋'} ${esc(c.label)}`; renderList(); }
+    body.scrollTop=0;
   }
   function renderList(){
     const cat=CATS.find(c=>c.key===tab); const arr=SET.lists[tab];
@@ -1433,7 +1438,7 @@ function openSettings(){
         <button data-m="single">إضافة فردية</button>
       </div>
       <div id="s-add"></div>
-      <div class="list-tools"><span>${toAr(arr.length)} عبارة في «${esc(cat.label)}»</span><button class="btn sm dng" id="s-clear">مسح الكل</button></div>
+      <div class="list-tools"><span id="s-count">${toAr(arr.length)} عبارة في «${esc(cat.label)}»</span><button class="btn sm dng" id="s-clear">مسح الكل</button></div>
       <div id="s-items"></div>`;
     const addBox=$('#s-add',body), itemsEl=$('#s-items',body); let mode='bulk';
     function renderAdd(){
@@ -1526,8 +1531,9 @@ function openSettings(){
     $('#bk-report',body).onclick=()=>{ rf.value=''; rf.click(); };
     rf.addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(f) importReportFile(f,()=>ov.close()); });
   }
-  $('#s-tabs',ov.bs); ov.bs.querySelector('.bs-x').onclick=ov.close;
-  tabs(); render();
+  backBtn.onclick=showMenu;
+  ov.bs.querySelector('.bs-x').onclick=ov.close;
+  showMenu();
 }
 
 function exportSettings(){
@@ -1669,6 +1675,25 @@ if ('serviceWorker' in navigator) {
   background:linear-gradient(150deg,#1ea088,#0f5d50);box-shadow:0 6px 14px -6px rgba(15,93,80,.9)}
 .ihg-tip{font-size:12.5px;color:var(--ink-2,#5d6864);background:rgba(21,128,111,.08);border-radius:12px;padding:10px 12px;line-height:1.7;margin-bottom:14px}
 .ihg-ok{width:100%;height:50px;border:none;border-radius:14px;font-weight:900;font-size:15px;background:linear-gradient(160deg,#1ea088,#0f5d50);color:#fff}
+/* قائمة إعدادات بطاقات (بدل الشريط المنزلق) */
+.set-back{border:none;background:#eef1f0;color:var(--teal-d,#0f5d50);border-radius:11px;width:36px;height:36px;font-size:19px;font-weight:900;flex:none}
+.set-back:hover{background:var(--tint-h,rgba(20,184,166,.15))}
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.set-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;background:#fff;
+  border:1px solid var(--line,#dde3e1);border-radius:16px;padding:14px 13px;text-align:right;transition:.14s;min-height:94px}
+.set-card:hover{border-color:var(--teal,#15806f);background:var(--tint,rgba(21,128,111,.06));transform:translateY(-1px)}
+.set-card:active{transform:translateY(0)}
+.set-card .ic{font-size:24px;line-height:1}
+.set-card .nm{font-weight:900;font-size:13.5px;color:var(--ink,#26302d);line-height:1.3}
+.set-card .ct{font-size:11.5px;font-weight:800;color:var(--mut,#8a938f)}
+.set-row{display:flex;align-items:center;gap:12px;width:100%;background:#fff;border:1px solid var(--line,#dde3e1);
+  border-radius:14px;padding:13px 14px;margin-bottom:9px;transition:.14s;text-align:right}
+.set-row:hover{border-color:var(--teal,#15806f);background:var(--tint,rgba(21,128,111,.06))}
+.set-row .ic{font-size:21px;flex:none}
+.set-row .rl{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.set-row .rl b{font-weight:900;font-size:14px;color:var(--ink,#26302d)}
+.set-row .rl small{font-weight:700;font-size:11.5px;color:var(--mut,#8a938f)}
+.set-row .ar{font-size:20px;color:var(--mut,#8a938f);flex:none}
 </style>
 <script>
 /* مساعد التثبيت: زر مباشر لأندرويد + دليل خطوات مصوّر (يذكر «المزيد») لآبل */
